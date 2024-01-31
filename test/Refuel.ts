@@ -40,6 +40,14 @@ describe("Refuel", function () {
 
     it("basic flow", async function () {
         const { owner, seller, bot, mockToken, ref, sign } = await loadFixture(deployFixture);
+        //const a = await ref.refuel(...[] as any)
+    })
 
+    it("pay", async function () {
+        const { owner, seller, bot, mockToken, ref, sign } = await loadFixture(deployFixture);
+        owner.sendTransaction({
+            to: await ref.getAddress(),
+            value: 1000000000
+        })
     })
 })

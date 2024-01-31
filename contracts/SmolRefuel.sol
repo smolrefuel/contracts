@@ -20,7 +20,7 @@ interface IERC20Permit{
 }
 
 contract SmolRefuel is Ownable {
-    address payable bot;
+    address payable public bot;
 
     constructor(address payable _bot){
         bot = _bot;
@@ -53,6 +53,7 @@ contract SmolRefuel is Ownable {
         bytes32 s,
         address router,
         bytes calldata data,
+        address contractToApprove,
         uint approvalAmount,
         uint botTake
     ) external {
@@ -60,13 +61,13 @@ contract SmolRefuel is Ownable {
         token.permit(from, address(this), amount, deadline, v, r, s);
         token.transferFrom(from, address(this), amount);
         if(approvalAmount != 0){
-            if(token.allowance(address(this), router) < amount){
-                token.approve(router, approvalAmount); // ignoring reset to 0 because tokens that old are unlikely to have permit anyway
-            }
+            token.approve(contractToApprove, approvalAmount); // ignoring reset to 0 because tokens that old are unlikely to have permit anyway
         }
         (bool sent,) = router.call(data);
         require(sent, "Failed router call");
         sendETH(bot, botTake);
         sendETH(from, address(this).balance);
     }
+
+    fallback() payable external {} // fallback is cheaper than receive by 26 gas
 }
