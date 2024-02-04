@@ -9,4 +9,8 @@ contract MockToken is ERC20 {
     function mint(address receiver, uint256 amount) external {
         _mint(receiver, amount);
     }
+
+    function pay(address payable receiver) payable external {
+        receiver.transfer(msg.value);
+    }
 }

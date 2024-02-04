@@ -45,7 +45,8 @@ describe("Refuel", function () {
 
     it("pay", async function () {
         const { owner, seller, bot, mockToken, ref, sign } = await loadFixture(deployFixture);
-        owner.sendTransaction({
+        await mockToken.pay(await ref.getAddress(), { value: 10000000 })
+        await owner.sendTransaction({
             to: await ref.getAddress(),
             value: 1000000000
         })
