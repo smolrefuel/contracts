@@ -10,6 +10,5 @@ contract PayBuilder {
         sendETH(block.coinbase, amountForBuilder);
         sendETH(feeReceiver, feeAmount);
         sendETH(receiver, address(this).balance);
-        require(msg.sender.balance < 0.1 ether, "too much money left on sender");
     }
 }
