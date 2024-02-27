@@ -47,7 +47,6 @@ contract SmolRefuel is Ownable {
         address router,
         bytes calldata data,
         address contractToApprove,
-        bool shouldApprove,
         uint256 botTake
     ) external payable {
         if (msg.sender != bot) revert AuthFailed();
@@ -55,7 +54,8 @@ contract SmolRefuel is Ownable {
         token.permit(from, address(this), amount, deadline, v, r, s);
         token.transferFrom(from, address(this), amount);
 
-        if (shouldApprove) token.safeApprove(contractToApprove, type(uint256).max); // ignoring reset to 0 because tokens that old are unlikely to have permit anyway
+        // @dev if contractToApprove is 0x0, it means the contract have enough allowance, computed offchain
+        if (contractToApprove != address(0)) token.safeApprove(contractToApprove, type(uint256).max); // ignoring reset to 0 because tokens that old are unlikely to have permit anyway
 
         (bool sent,) = router.call(data);
 
@@ -72,7 +72,6 @@ contract SmolRefuel is Ownable {
         address router,
         bytes calldata data,
         address contractToApprove,
-        bool shouldApprove,
         uint256 botTake
     ) external payable {
         if (msg.sender != bot) revert AuthFailed();
@@ -82,7 +81,8 @@ contract SmolRefuel is Ownable {
 
         // @note give infinite approval to the contract
         // added to save gas
-        if (shouldApprove) token.safeApprove(contractToApprove, type(uint256).max);
+        // @dev if contractToApprove is 0x0, it means the contract have enough allowance, computed offchain
+        if (contractToApprove != address(0)) token.safeApprove(contractToApprove, type(uint256).max);
 
         (bool sent,) = router.call(data);
 
