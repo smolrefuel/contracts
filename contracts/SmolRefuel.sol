@@ -13,6 +13,7 @@ contract SmolRefuel is Ownable {
 
     error AuthFailed();
     error FailedRouterCall();
+    error EthTransferFailed();
 
     constructor(address payable _bot) {
         bot = _bot;
@@ -32,7 +33,7 @@ contract SmolRefuel is Ownable {
 
     function sendETH(address payable to, uint256 amount) internal {
         (bool sent,) = to.call{value: amount}("");
-        require(sent, "Failed to send Ether");
+        if (!sent) revert EthTransferFailed();
     }
 
     function refuel(
