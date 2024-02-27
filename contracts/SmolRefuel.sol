@@ -1,50 +1,43 @@
 pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-
-interface IERC20Permit{
-     /// @notice EIP 2612
-    function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external;
-    function approve(address spender, uint256 amount) external returns (bool);
-    function allowance(address owner, address spender) external view returns (uint256);
-    function transferFrom(address from, address to, uint256 amount) external returns (bool);
-    function transfer(address to, uint256 amount) external returns (bool);
-}
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract SmolRefuel is Ownable {
+    using SafeERC20 for ERC20Permit;
+    using SafeERC20 for IERC20;
+
     address payable public bot;
 
-    constructor(address payable _bot){
+    error AuthFailed();
+    error FailedRouterCall();
+    error EthTransferFailed();
+
+    constructor(address payable _bot) {
         bot = _bot;
     }
 
-    function setBot(address payable _bot) onlyOwner() external {
+    function setBot(address payable _bot) external onlyOwner {
         bot = _bot;
     }
 
-    function retrieveToken(IERC20Permit token, uint amount, address to) onlyOwner() external {
+    function retrieveToken(IERC20 token, uint256 amount, address to) external onlyOwner {
         token.transfer(to, amount);
     }
 
-    function setApproval(IERC20Permit token, uint amount, address to) onlyOwner() external {
-        token.approve(to, amount);
+    function setApproval(IERC20 token, uint256 amount, address to) external onlyOwner {
+        token.safeApprove(to, amount);
     }
 
-    function sendETH(address payable to, uint amount) internal {
+    function sendETH(address payable to, uint256 amount) internal {
         (bool sent,) = to.call{value: amount}("");
-        require(sent, "Failed to send Ether");
+        if (!sent) revert EthTransferFailed();
     }
 
     function refuel(
-        IERC20Permit token,
+        ERC20Permit token,
         address payable from,
         uint256 amount,
         uint256 deadline,
@@ -54,20 +47,50 @@ contract SmolRefuel is Ownable {
         address router,
         bytes calldata data,
         address contractToApprove,
-        uint approvalAmount,
-        uint botTake
-    ) external {
-        require(msg.sender == bot, "auth");
+        uint256 botTake
+    ) external payable {
+        if (msg.sender != bot) revert AuthFailed();
+
         token.permit(from, address(this), amount, deadline, v, r, s);
         token.transferFrom(from, address(this), amount);
-        if(approvalAmount != 0){
-            token.approve(contractToApprove, approvalAmount); // ignoring reset to 0 because tokens that old are unlikely to have permit anyway
-        }
+
+        // @dev if contractToApprove is 0x0, it means the contract have enough allowance, computed offchain
+        if (contractToApprove != address(0)) token.safeApprove(contractToApprove, type(uint256).max); // ignoring reset to 0 because tokens that old are unlikely to have permit anyway
+
         (bool sent,) = router.call(data);
-        require(sent, "Failed router call");
+
+        if (!sent) revert FailedRouterCall();
+
         sendETH(bot, botTake);
         sendETH(from, address(this).balance);
     }
 
-    fallback() payable external {} // fallback is cheaper than receive by 26 gas
+    function refuelWithoutPermit(
+        IERC20 token,
+        address payable from,
+        uint256 amount,
+        address router,
+        bytes calldata data,
+        address contractToApprove,
+        uint256 botTake
+    ) external payable {
+        if (msg.sender != bot) revert AuthFailed();
+
+        // fetch token from user
+        token.transferFrom(from, address(this), amount);
+
+        // @note give infinite approval to the contract
+        // added to save gas
+        // @dev if contractToApprove is 0x0, it means the contract have enough allowance, computed offchain
+        if (contractToApprove != address(0)) token.safeApprove(contractToApprove, type(uint256).max);
+
+        (bool sent,) = router.call(data);
+
+        if (!sent) revert FailedRouterCall();
+
+        sendETH(bot, botTake);
+        sendETH(from, address(this).balance);
+    }
+
+    fallback() external payable {} // fallback is cheaper than receive by 26 gas
 }
