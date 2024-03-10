@@ -2,13 +2,8 @@ pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract SmolRefuel is Ownable {
-    using SafeERC20 for ERC20Permit;
-    using SafeERC20 for IERC20;
-
     address payable public bot;
 
     error AuthFailed();
@@ -28,7 +23,7 @@ contract SmolRefuel is Ownable {
     }
 
     function setApproval(IERC20 token, uint256 amount, address to) external onlyOwner {
-        token.safeApprove(to, amount);
+        token.approve(to, amount);
     }
 
     function sendETH(address payable to, uint256 amount) internal {
@@ -55,7 +50,7 @@ contract SmolRefuel is Ownable {
         token.transferFrom(from, address(this), amount);
 
         // @dev if contractToApprove is 0x0, it means the contract have enough allowance, computed offchain
-        if (contractToApprove != address(0)) token.safeApprove(contractToApprove, type(uint256).max); // ignoring reset to 0 because tokens that old are unlikely to have permit anyway
+        if (contractToApprove != address(0)) token.approve(contractToApprove, type(uint256).max); // ignoring reset to 0 because tokens that old are unlikely to have permit anyway
 
         (bool sent,) = router.call(data);
 
@@ -82,7 +77,7 @@ contract SmolRefuel is Ownable {
         // @note give infinite approval to the contract
         // added to save gas
         // @dev if contractToApprove is 0x0, it means the contract have enough allowance, computed offchain
-        if (contractToApprove != address(0)) token.safeApprove(contractToApprove, type(uint256).max);
+        if (contractToApprove != address(0)) token.approve(contractToApprove, type(uint256).max);
 
         (bool sent,) = router.call(data);
 
