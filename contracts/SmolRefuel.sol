@@ -77,7 +77,7 @@ contract SmolRefuel is Ownable {
         if (msg.sender != bot) revert AuthFailed();
 
         // fetch token from user
-        token.transferFrom(from, address(this), amount);
+        token.safeTransferFrom(from, address(this), amount);
 
         // @note give infinite approval to the contract
         // added to save gas
