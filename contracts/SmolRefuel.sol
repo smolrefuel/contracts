@@ -24,7 +24,7 @@ contract SmolRefuel is Ownable {
     }
 
     function retrieveToken(IERC20 token, uint256 amount, address to) external onlyOwner {
-        token.transfer(to, amount);
+        token.safeTransfer(to, amount);
     }
 
     function setApproval(IERC20 token, uint256 amount, address to) external onlyOwner {
