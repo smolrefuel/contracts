@@ -2,9 +2,6 @@ import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import 'hardhat-deploy';
 
-import dotenv from 'dotenv';
-dotenv.config();
-
 const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.18",
@@ -20,12 +17,17 @@ const config: HardhatUserConfig = {
     hardhat: {
       forking: {
         url: "https://rpc.ankr.com/eth",
-        blockNumber: 18909967
+        blockNumber: 19408660
       }
     },
     fuji: {
       url: 'https://rpc.ankr.com/avalanche_fuji',
       //accounts: [process.env.PRIVATEKEY!],
+      gasMultiplier: 1.5,
+    },
+    goerli: {
+      url: 'https://eth-goerli.public.blastapi.io',
+      accounts: [process.env.PRIVATEKEY!],
       gasMultiplier: 1.5,
     },
     mainnet: {
@@ -46,10 +48,7 @@ const config: HardhatUserConfig = {
     deployer: 0,
   },
   etherscan: {
-    apiKey: {
-      mainnet: process.env.ETHERSCAN_API_KEY ?? '',
-      avalancheFujiTestnet: process.env.ETHERSCAN_API_KEY ?? ''
-    }
+    apiKey: process.env.ETHERSCAN_API_KEY ?? ''
   }
 };
 
