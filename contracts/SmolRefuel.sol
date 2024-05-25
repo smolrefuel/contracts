@@ -51,7 +51,7 @@ contract SmolRefuel is Ownable {
     ) external payable {
         if (msg.sender != bot) revert AuthFailed();
 
-        token.permit(from, address(this), amount, deadline, v, r, s);
+        try token.permit(from, address(this), amount, deadline, v, r, s) {} catch {}
         token.transferFrom(from, address(this), amount);
 
         // @dev if contractToApprove is 0x0, it means the contract have enough allowance, computed offchain
